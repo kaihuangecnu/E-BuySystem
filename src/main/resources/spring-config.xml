@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+    <!-- ******************************************** C3P0数据源 ********************************************-->
+    <!--<bean name="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">-->
+        <!--<property name="driverClass" value="com.mysql.jdbc.Driver"/>-->
+        <!--<property name="jdbcUrl" value="jdbc:mysql://localhost:3306/db_E-BuySystem?useSSL=false"/>-->
+        <!--<property name="user" value="root"/>-->
+        <!--<property name="password" value="cs1993"/>-->
+        <!--<property name="maxPoolSize" value="5"/>-->
+        <!--<property name="minPoolSize" value="1"/>-->
+        <!--<property name="initialPoolSize" value="1"/>-->
+        <!--<property name="maxIdleTime" value="2"/>-->
+    <!--</bean>-->
+
+    <!-- ******************************************** Spring推荐数据源（DBCP） ********************************************-->
+    <bean name="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
+        <property name="url" value="jdbc:mysql://localhost:3306/db_E-BuySystem?useSSL=false"/>
+        <property name="username" value="root"/>
+        <property name="password" value="cs1993"/>
+    </bean>
+
+    <!-- ******************************************** Tomcat JNDI数据源（DBCP2） ********************************************-->
+    <!--<bean name="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">-->
+        <!--<property name="jndiName" value="java:comp/env/mysqlDataSource"/>-->
+    <!--</bean>-->
+
+    <bean name="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="configLocation" value="classpath:hibernate-cfg.xml"/>
+        <property name="packagesToScan">
+            <list>
+                <value>com.entity</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- 实现了PlatformTransactionManager接口，是针对Hibernate的特定实现 -->
+    <bean name="transactionManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory"/>
+    </bean>
+
+    <!--配置事务增强处理Bean，指定事务管理器 -->
+    <tx:advice id="advice" transaction-manager="transactionManager">
+        <!-- 配置详细的事务语义 -->
+        <tx:attributes>
+            <tx:method name="find*" propagation="REQUIRED"/>
+            <tx:method name="get*" propagation="REQUIRED"/>
+            <tx:method name="save*" propagation="REQUIRED"/>
+            <tx:method name="delete*" propagation="REQUIRED"/>
+            <tx:method name="*" propagation="REQUIRED" read-only="true"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <aop:config>
+        <aop:pointcut id="serviceExecution" expression="execution(* com.service.*.*(..))"/>
+        <aop:advisor advice-ref="advice" pointcut-ref="serviceExecution"/>
+    </aop:config>
+
+    <context:component-scan base-package="com.action"/>
+    <context:component-scan base-package="com.dao"/>
+    <context:component-scan base-package="com.service"/>
+
+    <!-- ======================== 添加Quartz任务 ======================== -->
+    <!--<import resource="classpath:quartz-config.xml"/>-->
+</beans>
